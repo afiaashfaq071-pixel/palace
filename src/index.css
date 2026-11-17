@@ -1,0 +1,50 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  scroll-behavior: smooth;
+  /* Keeps section headings clear of the fixed navbar when jumping to an anchor. */
+  scroll-padding-top: 4.5rem;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  @apply bg-ink font-sans text-ivory antialiased;
+  overflow-x: clip;
+}
+
+:focus-visible {
+  outline: 2px solid #c6a46a;
+  outline-offset: 3px;
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex min-h-[3rem] items-center justify-center gap-2 rounded-full px-7 text-sm font-medium tracking-wide transition-colors duration-300;
+  }
+  .btn-gold {
+    @apply bg-gold text-ink hover:bg-ivory;
+  }
+  .btn-outline {
+    @apply border border-gold/70 text-ivory hover:bg-gold hover:text-ink;
+  }
+  .btn-dark {
+    @apply bg-ink text-ivory hover:bg-gold hover:text-ink;
+  }
+  .icon-btn {
+    @apply inline-flex h-12 w-12 items-center justify-center rounded-full text-ivory transition-colors hover:bg-ivory/10 hover:text-gold;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
