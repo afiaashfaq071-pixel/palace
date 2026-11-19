@@ -122,7 +122,7 @@ function SmartImage({
       src={image.src}
       alt={image.alt}
       loading={loading}
-      fetchpriority={fetchPriority}
+      fetchPriority={fetchPriority}
       decoding="async"
       sizes={sizes}
       onLoad={() => setStatus("loaded")}
