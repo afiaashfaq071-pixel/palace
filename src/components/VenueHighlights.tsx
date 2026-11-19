@@ -14,10 +14,10 @@ export default function VenueHighlights() {
         {EVENTS.map((event, i) => (
           <li
             key={event}
-            className="group border-b border-r border-gold/25 px-4 py-9 transition-colors duration-500 hover:bg-gold/10 sm:px-6 sm:py-14"
+            className="group border-b border-r border-gold/25 px-3 py-8 transition-colors min-[400px]:px-4 min-[400px]:py-9 duration-500 hover:bg-gold/10 sm:px-6 sm:py-14"
           >
             <Reveal delay={(i % 3) * 0.08}>
-              <p className="text-balance font-display text-xl text-ivory transition-colors group-hover:text-gold sm:text-3xl">
+              <p className="text-balance break-words font-display text-lg text-ivory transition-colors group-hover:text-gold min-[400px]:text-xl sm:text-3xl">
                 {event}
               </p>
             </Reveal>

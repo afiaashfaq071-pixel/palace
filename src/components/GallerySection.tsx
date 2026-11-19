@@ -86,11 +86,8 @@ export default function GallerySection() {
     setActive(index);
   }, []);
 
-  // Closing returns focus to the tile that opened the viewer.
-  const handleClose = useCallback(() => {
-    setActive(null);
-    triggerRef.current?.focus({ preventScroll: true });
-  }, []);
+  // Focus returns to the opening tile from inside Lightbox, once its exit animation is done.
+  const handleClose = useCallback(() => setActive(null), []);
 
   return (
     <Section id="gallery" labelledBy="gallery-title" tone="ink">
@@ -118,6 +115,7 @@ export default function GallerySection() {
             photos={photos}
             openable={openable}
             current={active}
+            returnFocusTo={triggerRef}
             onChange={setActive}
             onClose={handleClose}
           />

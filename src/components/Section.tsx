@@ -17,7 +17,12 @@ interface Props {
 /** Shared wrapper so every section has identical spacing, width and landmark labelling. */
 export default function Section({ id, labelledBy, tone, children }: Props) {
   return (
-    <section id={id} aria-labelledby={labelledBy} className={`${TONES[tone]} py-20 sm:py-28`}>
+    <section
+      id={id}
+      aria-labelledby={labelledBy}
+      tabIndex={-1}
+      className={`${TONES[tone]} py-16 focus:outline-none sm:py-28`}
+    >
       <div className="mx-auto w-full max-w-6xl px-5 sm:px-8">{children}</div>
     </section>
   );

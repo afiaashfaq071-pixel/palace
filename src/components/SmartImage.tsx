@@ -1,26 +1,25 @@
+
 import { memo, useEffect, useRef, useState } from "react";
 import type { ImageAsset } from "../data/site";
 import ImagePlaceholder from "./ImagePlaceholder";
 
 export type ImageStatus = "loading" | "loaded" | "error";
 
+/** Phones: portrait image is used below this width. */
+const MOBILE_QUERY = "(max-width: 767px)";
+
 interface Props {
   image: ImageAsset;
-  /** Size and aspect ratio come from the parent so the layout never shifts or breaks. */
+  /** Size and aspect ratio come from the parent. */
   className?: string;
   loading?: "lazy" | "eager";
   fetchPriority?: "high" | "low" | "auto";
   sizes?: string;
   placeholderVariant?: "hero" | "tile";
-  /** Reports whether the real file loaded, so callers can avoid opening empty placeholders. */
+  /** Reports whether the real image loaded. */
   onStatus?: (status: ImageStatus) => void;
 }
 
-/**
- * Renders the real photo from /public/images. If the file is missing or not a valid image,
- * a clearly labelled placeholder fills the same box, so layouts never break and nothing
- * is passed off as a real photograph.
- */
 function SmartImage({
   image,
   className = "",
@@ -31,37 +30,121 @@ function SmartImage({
   onStatus,
 }: Props) {
   const [status, setStatus] = useState<ImageStatus>("loading");
+  const [mobileFailed, setMobileFailed] = useState(false);
+
   const ref = useRef<HTMLImageElement>(null);
 
-  // Handles images that finished loading (or failed) before React attached its listeners.
+  const useMobileSource = Boolean(image.mobileSrc) && !mobileFailed;
+
+  // Check images that loaded before React attached event listeners.
   useEffect(() => {
     const el = ref.current;
-    if (el && el.complete) setStatus(el.naturalWidth > 0 ? "loaded" : "error");
+
+    if (el?.complete) {
+      setStatus(el.naturalWidth > 0 ? "loaded" : "error");
+    }
   }, []);
 
+  // Notify the parent when image status changes.
   useEffect(() => {
-    if (status !== "loading") onStatus?.(status);
+    if (status !== "loading") {
+      onStatus?.(status);
+    }
   }, [status, onStatus]);
 
+  // Check whether the mobile image exists.
+  useEffect(() => {
+    const mobileSrc = image.mobileSrc;
+
+    if (!mobileSrc || mobileFailed) return;
+
+    const query = window.matchMedia(MOBILE_QUERY);
+    let probe: HTMLImageElement | null = null;
+
+    const check = () => {
+      if (!query.matches || probe) return;
+
+      probe = new Image();
+
+      probe.onload = () => {
+        probe = null;
+      };
+
+      probe.onerror = () => {
+        setMobileFailed(true);
+      };
+
+      probe.src = mobileSrc;
+    };
+
+    check();
+
+    query.addEventListener("change", check);
+
+    return () => {
+      query.removeEventListener("change", check);
+
+      if (probe) {
+        probe.onload = null;
+        probe.onerror = null;
+      }
+    };
+  }, [image.mobileSrc, mobileFailed]);
+
+  // Handle image loading errors.
+  const handleError = () => {
+    if (
+      useMobileSource &&
+      window.matchMedia(MOBILE_QUERY).matches
+    ) {
+      setMobileFailed(true);
+      setStatus("loading");
+      return;
+    }
+
+    setStatus("error");
+  };
+
+  // Display a placeholder if the image fails.
   if (status === "error") {
     return (
-      <ImagePlaceholder label={image.label} variant={placeholderVariant} className={className} />
+      <ImagePlaceholder
+        label={image.label}
+        variant={placeholderVariant}
+        className={className}
+      />
     );
   }
 
-  return (
+  const img = (
     <img
       ref={ref}
       src={image.src}
       alt={image.alt}
       loading={loading}
-      fetchPriority={fetchPriority}
+      fetchpriority={fetchPriority}
       decoding="async"
       sizes={sizes}
       onLoad={() => setStatus("loaded")}
-      onError={() => setStatus("error")}
+      onError={handleError}
       className={`bg-charcoal object-cover ${className}`}
     />
+  );
+
+  // Desktop image or mobile fallback.
+  if (!useMobileSource) {
+    return img;
+  }
+
+  // Serve a separate portrait image on mobile.
+  return (
+    <picture className="block h-full w-full">
+      <source
+        media={MOBILE_QUERY}
+        srcSet={image.mobileSrc}
+      />
+      {img}
+    </picture>
   );
 }
 

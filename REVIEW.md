@@ -75,3 +75,75 @@ What was actually run:
 - Images are used as supplied (no resizing pipeline). Export photos at the sizes in `public/images/README.txt`.
 - Placeholders cannot be replaced by AI or stock photos; real venue photographs are still needed.
 - Google Maps embed and exact directions link need the verified business listing.
+
+## 7. Mobile hero image (v1.2.0)
+
+- `IMAGES.hero` in `src/data/site.ts` now has an optional `mobileSrc` (`/images/hero-mobile.webp`).
+- `SmartImage` renders a `<picture>`: the portrait image below 768px, the unchanged `hero-night.jpg` from 768px up.
+- If `hero-mobile.webp` is missing, phones fall back to `hero-night.jpg` instead of showing a placeholder.
+- The hero box is fixed to the screen (`absolute inset-0`), so swapping images causes no layout shift.
+- Phone-only tweaks in `HeroSection.tsx`: focal point `50% 35%` for the fallback crop, a slightly lighter tint and a shorter bottom scrim so more of the building shows. Desktop classes are unchanged.
+- Export the portrait image at 4:5 or 3:4 (about 1080x1440) with the palace entrance centred in the upper two thirds; the text and buttons sit over the bottom third.
+
+## 8. Mobile audit (v1.3.0)
+
+Fixed:
+- Hero heading was stuck at 16px on phones: `text-[clamp(...)]` is ambiguous in Tailwind. Now `text-[length:clamp(2.1rem,11vw,3.5rem)]` (35px at 320px up to 47px at 430px).
+- Desktop nav links were 17px tall (too small to tap on tablets). Hit area is now 44px; their look is unchanged.
+- Section spacing on phones reduced (`py-16`, desktop still `py-28`).
+- Events grid: smaller text and padding below 400px so "Celebrations" never clips at 320px.
+- Mobile menu cannot grow taller than the screen (scrolls inside if needed).
+- Removed `viewport-fit=cover` so content never sits under a phone notch in landscape.
+- Build now adds `<link rel="preload">` for the hero image actually used (portrait below 768px, landscape above) when the files exist, so the hero starts loading before React runs.
+
+Desktop (768px and up) classes are unchanged apart from the invisible nav hit-area increase.
+
+Tested in Chromium at 320, 360, 375, 390, 414, 430, 768, 1024, 1366, 1920px, rendering the real components with the project's CSS classes: no horizontal overflow, no element wider than the screen, no clipped text, no distorted images, no tap target under 44px, logo and menu button never overlap, correct hero image at each width, no script errors.
+Interactions tested (390px, touch): menu open/close, Escape, outside tap, link closes menu and heading lands below the navbar; gallery open, counter, arrow keys, Next/Previous with wrap-around, swipe, Tab focus trap, close button, Escape, scroll lock and restore, focus returns to the tile; phone, WhatsApp and directions links; every in-page link has a target.
+
+How the test differed from production: Framer Motion and Lucide were replaced by simple stand-ins (animations and icon drawings not tested), Tailwind 4 compiled the CSS (the project pins 3), fonts were the fallback fonts (Cormorant Garamond and Jost could not be downloaded), and the photos were plain coloured test images. `npm run build` was not run.
+
+Not done / still needed:
+- Real photographs, including the portrait `hero-mobile.webp` (1080x1350 or 1080x1440). Until then phones show `hero-night.jpg`, or a placeholder if that is missing too.
+- The live site (palace-steel.vercel.app) could not be opened from this environment, so this was checked against the project files, not the deployed page.
+- Social links: none are shown, because no official accounts are confirmed.
+- Map: not embedded until the exact business location is verified; the Get Directions button works.
+
+## 9. Code audit and bug fixes (v1.4.0)
+
+### Bugs found and fixed
+| # | Bug | Fix |
+| --- | --- | --- |
+| 1 | Lightbox gave focus back to the tile while the dialog was still fading out. | Focus is restored when the dialog is removed, after the exit animation. Verified: focus stays inside the dialog during the fade and lands on the tile afterwards. |
+| 2 | Page behind the lightbox was still reachable by keyboard and screen readers. | Dialog is rendered in a portal on `<body>` and `#root` is set `inert` while open (released on close). |
+| 3 | Mobile menu: choosing a link left focus on a link that had just been hidden. | Focus moves to the chosen section (sections are `tabIndex={-1}` focus targets, outline hidden). |
+| 4 | Growing the window to desktop width could leave focus on the hidden menu or button; the browser drops focus before any handler runs. | Header remembers whether it held focus and moves focus to the logo link. Found by the new browser test (it failed once, then passed after the fix). |
+| 5 | Resizing from desktop to phone width with `hero-mobile.webp` missing left a broken hero image and no placeholder (the browser does not report the failed file). | `SmartImage` checks the portrait file directly at phone width and falls back to `hero-night.jpg`. Found by the new browser test. |
+| 6 | `npm run build` did not type-check the vite config, plugin or tests. | `typecheck` now also runs `tsconfig.node.json`; `build` runs `typecheck` first. |
+| 7 | `vite.config.ts` needed `vitest/config` for its `test` section. | Fixed. |
+| 8 | Fonts blocked first paint; unused font weights were downloaded. | Font stylesheet loads without blocking; dropped unused weights (Jost 300, Cormorant 600). |
+| 9 | The map iframe accepted any URL. | Only `https://www.google.com/maps/embed...` is rendered, with a `sandbox` attribute. |
+| 10 | `robots.txt` was static and there was no sitemap. | `robots.txt` and `sitemap.xml` are generated at build time from `siteUrl` in `site.ts`; the sitemap and the `Sitemap:` line appear only once `siteUrl` is set. |
+
+### New files
+`.gitignore`, `eslint.config.js`, `tsconfig.node.json`, `vite-plugins/seo.ts` (moved out of `vite.config.ts` so it can be tested), `tests/site.test.ts`, `tests/seo.test.ts`.
+
+### Modified files
+`package.json`, `tsconfig.json`, `vite.config.ts`, `index.html`, `src/data/site.ts`, `src/components/Lightbox.tsx`, `GallerySection.tsx`, `Navbar.tsx`, `SmartImage.tsx`, `Section.tsx`, `HeroSection.tsx`, `LocationSection.tsx`, `README.md`, this file. Removed: `public/robots.txt` (now generated).
+
+### Checked, no change needed
+No `dangerouslySetInnerHTML`, `innerHTML` or `eval`; every new-tab link has `rel="noopener noreferrer"`; no third-party scripts; every event listener has a matching cleanup; hook dependency lists are complete; no unused imports or variables (`noUnusedLocals` passes); no `any`.
+
+### Test results (what was actually run)
+- **Unit tests: 25 of 25 pass** (`tests/`). Vitest is not installed here, so they were run with a minimal stand-in for the Vitest functions. I broke the WhatsApp number on purpose and a test failed, so they can fail. Please run `npm test` for the real Vitest run.
+- **Strict TypeScript (`noUnusedLocals`, `noUnusedParameters`): no errors** for `src` and for the Node-side files. Real React, Framer Motion, Lucide, Vite and Vitest type packages are not installed here, so those were replaced by small hand-written type stand-ins. Treat as a partial check and run `npm run typecheck`.
+- **Browser tests in Chromium: 36 of 36 pass**, run three times: lightbox isolation and focus timing, six menu-focus cases, hero image with and without each file at phone and desktop width, layout shift (0), and resize behaviour. Framer Motion was replaced by a stand-in that keeps the dialog on screen for 250ms after closing, to imitate the exit animation.
+- **Layout at 320, 360, 375, 390, 414, 430, 768, 1024, 1366 and 1920px: clean** (no overflow, clipped text, distortion, small tap targets or overlap), plus the earlier 31 interaction checks.
+
+### Not done or not verified
+- **`package-lock.json` was not generated** and `npm audit` was not run: the npm registry is unreachable from here. Run `npm install` once, commit the lock file, then run `npm audit`.
+- **`npm run build`, `npm run lint` and the real Vitest run were not executed** (packages cannot be installed here). The ESLint config is written but has never been run.
+- **Real animations** (Framer Motion exit/entrance, reduced-motion behaviour), the icon drawings, the real fonts and Tailwind 3 output were not tested; screenshots used Tailwind 4 and fallback fonts.
+- **Responsive image sizes:** one file per image is served; no multiple widths until real photos exist.
+- **Core Web Vitals** were not measured. Hero preload, non-blocking fonts, lazy images and zero layout shift in the test are in place.
+- Real photographs, including `hero-mobile.webp`, are still needed. Items in `CONFIRMATION_CHECKLIST` still need management confirmation.

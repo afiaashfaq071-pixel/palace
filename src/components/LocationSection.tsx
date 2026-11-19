@@ -2,10 +2,11 @@ import { Navigation } from "lucide-react";
 import Reveal from "./Reveal";
 import Section from "./Section";
 import SectionHeading from "./SectionHeading";
-import { SITE } from "../data/site";
+import { SITE, isSafeMapEmbed } from "../data/site";
 
 export default function LocationSection() {
-  const hasMap = Boolean(SITE.mapEmbedUrl);
+  const mapUrl = isSafeMapEmbed(SITE.mapEmbedUrl) ? SITE.mapEmbedUrl : null;
+  const hasMap = mapUrl !== null;
 
   return (
     <Section id="location" labelledBy="location-title" tone="ivory">
@@ -35,12 +36,13 @@ export default function LocationSection() {
         </Reveal>
 
         {/* Renders only after the exact pin is verified (see data/site.ts). */}
-        {SITE.mapEmbedUrl && (
+        {mapUrl && (
           <Reveal delay={0.15}>
             <iframe
               title="Map showing Al-Rasheed Palace in Sambrial"
-              src={SITE.mapEmbedUrl}
+              src={mapUrl}
               loading="lazy"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
               referrerPolicy="no-referrer-when-downgrade"
               className="aspect-[4/3] w-full rounded-2xl border-0 shadow-xl shadow-ink/15"
             />

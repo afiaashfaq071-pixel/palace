@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
-import type { TouchEvent } from "react";
+import type { RefObject, TouchEvent } from "react";
+import { createPortal } from "react-dom";
 import { m } from "framer-motion";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import type { ImageAsset } from "../data/site";
@@ -10,11 +11,22 @@ interface Props {
   openable: number[];
   /** Index into `photos` currently shown. */
   current: number;
+  /** Element that opened the viewer; it gets focus back once the viewer has fully gone. */
+  returnFocusTo: RefObject<HTMLElement | null>;
   onChange: (index: number) => void;
   onClose: () => void;
 }
 
-export default function Lightbox({ photos, openable, current, onChange, onClose }: Props) {
+const SWIPE_DISTANCE = 50;
+
+export default function Lightbox({
+  photos,
+  openable,
+  current,
+  returnFocusTo,
+  onChange,
+  onClose,
+}: Props) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const touchStartX = useRef<number | null>(null);
@@ -30,26 +42,31 @@ export default function Lightbox({ photos, openable, current, onChange, onClose 
     [position, total, openable, onChange],
   );
 
-  // Lock background scrolling, then put back exactly what was there before.
+  // While open: hide the rest of the page from keyboard and screen readers (`inert`),
+  // lock background scrolling and put focus in the dialog. When this component is removed,
+  // which is after the exit animation has finished, everything is restored in order and
+  // focus goes back to the tile that opened it.
   useEffect(() => {
+    const root = document.getElementById("root");
     const { body, documentElement } = document;
     const previousOverflow = body.style.overflow;
     const previousPadding = body.style.paddingRight;
     const scrollbarWidth = window.innerWidth - documentElement.clientWidth;
+
+    if (root) root.inert = true;
     body.style.overflow = "hidden";
     if (scrollbarWidth > 0) body.style.paddingRight = `${scrollbarWidth}px`;
+    closeRef.current?.focus();
+
     return () => {
+      if (root) root.inert = false;
       body.style.overflow = previousOverflow;
       body.style.paddingRight = previousPadding;
+      returnFocusTo.current?.focus({ preventScroll: true });
     };
-  }, []);
+  }, [returnFocusTo]);
 
-  // Move focus into the dialog on open.
-  useEffect(() => {
-    closeRef.current?.focus();
-  }, []);
-
-  // Escape, arrow keys and a Tab focus trap.
+  // Escape, arrow keys and a Tab focus trap (a safety net on top of `inert`).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -92,12 +109,12 @@ export default function Lightbox({ photos, openable, current, onChange, onClose 
     if (touchStartX.current === null) return;
     const delta = e.changedTouches[0].clientX - touchStartX.current;
     touchStartX.current = null;
-    if (Math.abs(delta) > 50) step(delta < 0 ? 1 : -1);
+    if (Math.abs(delta) > SWIPE_DISTANCE) step(delta < 0 ? 1 : -1);
   };
 
   const photo = photos[current];
 
-  return (
+  return createPortal(
     <m.div
       ref={dialogRef}
       role="dialog"
@@ -149,8 +166,8 @@ export default function Lightbox({ photos, openable, current, onChange, onClose 
         </m.figure>
       </div>
 
-      <div className="flex items-center justify-center gap-6 px-4 py-4">
-        {total > 1 && (
+      {total > 1 && (
+        <div className="flex items-center justify-center gap-6 px-4 py-4">
           <button
             type="button"
             className="icon-btn border border-ivory/20"
@@ -159,8 +176,6 @@ export default function Lightbox({ photos, openable, current, onChange, onClose 
           >
             <ChevronLeft size={26} aria-hidden="true" />
           </button>
-        )}
-        {total > 1 && (
           <button
             type="button"
             className="icon-btn border border-ivory/20"
@@ -169,8 +184,9 @@ export default function Lightbox({ photos, openable, current, onChange, onClose 
           >
             <ChevronRight size={26} aria-hidden="true" />
           </button>
-        )}
-      </div>
-    </m.div>
+        </div>
+      )}
+    </m.div>,
+    document.body,
   );
 }

@@ -10,7 +10,8 @@ export default function HeroSection() {
     <section
       id="top"
       aria-labelledby="hero-title"
-      className="relative isolate flex min-h-[100svh] items-end overflow-hidden bg-ink"
+      tabIndex={-1}
+      className="relative isolate flex focus:outline-none min-h-[100svh] items-end overflow-hidden bg-ink"
     >
       {/* Slow, gentle zoom on the background photograph. */}
       <m.div
@@ -26,14 +27,14 @@ export default function HeroSection() {
           fetchPriority="high"
           placeholderVariant="hero"
           sizes="100vw"
-          className="h-full w-full"
+          className="h-full w-full object-[50%_35%] md:object-center"
         />
       </m.div>
 
       {/* One even tint plus a bottom scrim keeps the text readable on any photograph. */}
-      <div className="absolute inset-0 -z-10 bg-ink/35" aria-hidden="true" />
+      <div className="absolute inset-0 -z-10 bg-ink/30 md:bg-ink/35" aria-hidden="true" />
       <div
-        className="absolute inset-x-0 bottom-0 -z-10 h-3/4 bg-gradient-to-t from-ink via-ink/70 to-transparent"
+        className="absolute inset-x-0 bottom-0 -z-10 h-[62%] bg-gradient-to-t from-ink via-ink/75 to-transparent md:h-3/4 md:via-ink/70"
         aria-hidden="true"
       />
 
@@ -49,7 +50,7 @@ export default function HeroSection() {
 
         <m.h1
           id="hero-title"
-          className="mt-5 font-display text-[clamp(2.1rem,11vw,3.5rem)] leading-[1.05] tracking-[0.03em] text-ivory sm:text-7xl lg:text-8xl"
+          className="mt-5 font-display text-[length:clamp(2.1rem,11vw,3.5rem)] leading-[1.05] tracking-[0.03em] text-ivory sm:text-7xl lg:text-8xl"
           initial={{ opacity: 0, y: 28 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.15, ease }}

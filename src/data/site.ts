@@ -55,6 +55,10 @@ export const SITE = {
     "Al-Rasheed Palace is a wedding and event venue on Daska Road, Sambrial, Sialkot, Punjab. Call or message the management team on WhatsApp to ask about your event.",
 };
 
+/** Only Google Maps embed URLs are ever put into the page's iframe. */
+export const isSafeMapEmbed = (url: string | null): url is string =>
+  typeof url === "string" && url.startsWith("https://www.google.com/maps/embed");
+
 export const whatsappLink = () =>
   `https://wa.me/${SITE.whatsappNumber}?text=${encodeURIComponent(SITE.whatsappMessage)}`;
 
@@ -63,6 +67,11 @@ export const telLink = () => `tel:${SITE.phoneTel}`;
 export interface ImageAsset {
   /** Drop the real photo at this path inside /public to replace the placeholder. */
   src: string;
+  /**
+   * Optional portrait crop used below 768px wide (phones). If the file is missing,
+   * phones fall back to `src`, so the page never breaks.
+   */
+  mobileSrc?: string;
   /** Describe what is actually in the photo once the real file is added. */
   alt: string;
   /** Shown on the placeholder so it is clearly not a real photo. */
@@ -72,6 +81,7 @@ export interface ImageAsset {
 export const IMAGES = {
   hero: {
     src: "/images/hero-night.jpg",
+    mobileSrc: "/images/hero-mobile.webp", // portrait 4:5 or 3:4, about 1080x1440
     alt: "Al-Rasheed Palace illuminated at night",
     label: "Palace exterior at night",
   },
@@ -116,6 +126,6 @@ export const CONFIRMATION_CHECKLIST = [
   "Event categories shown in the Occasions section",
   "Exact Google Business Profile link for directions, and the map embed URL",
   "Official Instagram and LinkedIn accounts, if any",
-  "Real photographs for the hero, about section, gallery and social share image",
+  "Real photographs for the hero (landscape and portrait mobile crop), about section, gallery and social share image",
   "Public website address (siteUrl)",
 ];
